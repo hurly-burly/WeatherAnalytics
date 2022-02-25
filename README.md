@@ -4,7 +4,7 @@ Analysis of historical weather data.
 
 ## Description
 
-The application calls OpenWeather API to fetch historical data for last 5 days for 10 different locations whose latitude and longitude is given.
+The application calls OpenWeather API to fetch historical data for last 5 days for 10 different locations whose latitude and longitude are given.
 
 ## Table of contents
 
