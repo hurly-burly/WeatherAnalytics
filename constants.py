@@ -1,6 +1,9 @@
 """definition for project constants"""
 
-LAT_LONG = {"Ranchi": (23.344315, 85.296013),"Delhi": (28.679079, 77.069710), "Mumbai": (19.076090, 72.877426), "Bhubaneswar": (20.296059, 85.824539), "Durg": (21.190449, 81.284920)}
+LAT_LONG = {"Ranchi": (23.344315, 85.296013), "Delhi": (28.679079, 77.069710), "Mumbai": (19.076090, 72.877426), 
+            "Bhubaneswar": (20.296059, 85.824539), "Durg": (21.190449, 81.284920), "Melfort": (52.856388, -104.610001), 
+            "Waterloo": (45.349998, -72.516670), "Victoriaville": (46.049999, -71.966667), "Roberval": (48.520000, -72.230003), 
+            "Montreal": (45.630001, -73.519997)}
 
 MAX_RETRIES = 5  # number of retries to be made if hit to the API fails
 TEMP_UNIT = "metric"  #  for temperature in Celsius default is Kelvin
