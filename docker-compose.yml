@@ -1,0 +1,8 @@
+version: '3'
+services:
+    myservice:
+        build: ./
+        command: python app.py
+        volumes:
+            - $PWD/SQLiteDB:/var/lib/sqlitedb
+            - $PWD/logs:/var/lib/logs
