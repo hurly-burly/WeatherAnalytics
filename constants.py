@@ -10,7 +10,7 @@ DROP_DATASET1_TABLE_QUERY = """drop table if exists DATASET1"""
 CREATE_DATASET1_QUERY = """
 create table DATASET1 
 as 
-select location Location, date(date_time) Date, temperature Temperature
+select distinct location Location, date(date_time) Date, temperature Temperature
 from raw w_out
 where temperature = (select max(temperature) 
                      from raw w_in 
@@ -23,7 +23,7 @@ DROP_DATASET2_TABLE_QUERY = """drop table if exists DATASET2"""
 CREATE_DATASET2_QUERY = """
 create table DATASET2 
 as 
-select distinct date, avg_temperature, min_temperature, w_min.location min_temp_loc, w_max.location max_temp_loc
+select distinct date, round(avg_temperature, 2) avg_temperature, round(min_temperature, 2) min_temperature, w_min.location min_temp_loc, w_max.location max_temp_loc
 from (
        select date(date_time) date, avg(temperature) avg_temperature, min(temperature) min_temperature, max(temperature) max_temperature 
        from raw
