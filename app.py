@@ -40,61 +40,64 @@ if __name__ == "__main__":
         logger = logging.getLogger()
         print(f"log file availaible at: {REPLICATED_LOG_DIR_PATH}/{run_id}.log", )
         logger.info("------------Execution started--------------")
-
-        # check if API_KEY is set
-        if not API_KEY:
-            logger.error("API key not found: set a valid API key value to API_KEY variable in config.py")
-            raise Exception("API_KEY not found")
-
-        BASE_URL = "https://api.openweathermap.org/data/2.5/onecall/timemachine?"
-
-        print("sending requests to OpenWeather API ...")
-        logger.info("sending requests to OpenWeather API ...")
-        weather_data_list = []
-        for location, lat_long in LAT_LONG.items():
-            for nday in range(0, 5):
-                date = datetime.datetime.utcnow() - datetime.timedelta(nday)
-                utc_time = calendar.timegm(date.utctimetuple())
-                DATE_TIMESTAMP = utc_time  # Date from the previous five days (Unix time, UTC time zone)
-                # full URL
-                URL = f"{BASE_URL}lat={lat_long[0]}&lon={lat_long[1]}&units={TEMP_UNIT}&dt={DATE_TIMESTAMP}&appid={API_KEY}"
-                retries = 0
-                response = None
-                while True:
-                    # HTTP request
-                    response = requests.get(URL)
-                    # checking the status code of the request
-                    if response.status_code != 200 and retries < MAX_RETRIES:
-                        retries += 1
-                        time.sleep(1)  # sleep for one second before retrying
-                        logger.info(f"Retrying... {retries}")
-                        continue
-                    break
-                logger.info(f"HTTP Response Status Code {response.status_code}")
-                if response.status_code == 200:
-                    # getting data in the json format
-                    data = response.json()  # getting the data
-                    latitude = data['lat']
-                    longitude = data['lon']
-                    main = data['hourly']
-                    for i in range(len(main)):
-                        date = main[i]['dt']
-                        temperature = main[i]['temp']
-                        weather_data_list.append([location, latitude, longitude,
-                                                  datetime.datetime.utcfromtimestamp(int(date)).strftime(
-                                                      '%Y-%m-%d %H:%M:%S'),
-                                                  temperature])
-                else:
-                    data = response.json()  # API returning json even if the request is unsuccessful
-                    error_msg = ''
-                    if data:
-                        error_msg = data['message']
-                    logger.error(f"Error in the HTTP request - {response.status_code}: {error_msg}")
-
-        weather_df = pd.DataFrame(weather_data_list,
-                                  columns=["Location", "Latitude", "Longitude", "Date_time", "Temperature"])
-        weather_df.drop_duplicates(subset=None, keep='first', inplace=True)
-
+        try:
+            # check if API_KEY is set
+            if not API_KEY:
+                logger.error("API key not found: set a valid API key value to API_KEY variable in config.py")
+                raise Exception("API_KEY not found")
+    
+            BASE_URL = "https://api.openweathermap.org/data/2.5/onecall/timemachine?"
+    
+            print("sending requests to OpenWeather API ...")
+            logger.info("sending requests to OpenWeather API ...")
+            weather_data_list = []
+            current_time = datetime.datetime.utcnow()
+            for location, lat_long in LAT_LONG.items():
+                for nday in range(0, 5):
+                    date = current_time - datetime.timedelta(nday)
+                    utc_time = calendar.timegm(date.utctimetuple())
+                    DATE_TIMESTAMP = utc_time  # Date from the previous five days (Unix time, UTC time zone)
+                    # full URL
+                    URL = f"{BASE_URL}lat={lat_long[0]}&lon={lat_long[1]}&units={TEMP_UNIT}&dt={DATE_TIMESTAMP}&appid={API_KEY}"
+                    retries = 0
+                    response = None
+                    while True:
+                        # HTTP request
+                        response = requests.get(URL)
+                        # checking the status code of the request
+                        if response.status_code != 200 and retries < MAX_RETRIES:
+                            retries += 1
+                            time.sleep(1)  # sleep for one second before retrying
+                            logger.info(f"Retrying... {retries}")
+                            continue
+                        break
+                    logger.info(f"HTTP Response Status Code {response.status_code}")
+                    if response.status_code == 200:
+                        # getting data in the json format
+                        data = response.json()  # getting the data
+                        latitude = data['lat']
+                        longitude = data['lon']
+                        main = data['hourly']
+                        for i in range(len(main)):
+                            date = main[i]['dt']
+                            temperature = main[i]['temp']
+                            weather_data_list.append([location, latitude, longitude,
+                                                      datetime.datetime.utcfromtimestamp(int(date)).strftime(
+                                                          '%Y-%m-%d %H:%M:%S'),
+                                                      temperature])
+                    else:
+                        data = response.json()  # API returning json even if the request is unsuccessful
+                        error_msg = ''
+                        if data:
+                            error_msg = data['message']
+                        logger.error(f"Error in the HTTP request - {response.status_code}: {error_msg}")
+    
+            weather_df = pd.DataFrame(weather_data_list,
+                                      columns=["Location", "Latitude", "Longitude", "Date_time", "Temperature"])
+            weather_df.drop_duplicates(subset=None, keep='first', inplace=True)
+        except Exception as e:
+            logger.error(str(e))
+            raise Exception(str(e))
         print("Saving data to DB...")
 
         try:
