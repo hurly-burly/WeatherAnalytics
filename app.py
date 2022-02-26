@@ -8,7 +8,8 @@ import uuid
 import pandas as pd
 import sqlite3 as sql
 
-from config import API_KEY, BASE_DIR, DB_NAME, RAW_DATA_TABLE, DATASET1, DATASET2
+from config import API_KEY, BASE_DIR, REPLICATED_LOG_DIR_PATH, DB_NAME, RAW_DATA_TABLE, DATASET1, DATASET2, \
+    REPLICATED_DB_DIR_PATH
 from constants import LAT_LONG, MAX_RETRIES, TEMP_UNIT, DROP_DATASET1_TABLE_QUERY, CREATE_DATASET1_QUERY, \
     DROP_DATASET2_TABLE_QUERY, CREATE_DATASET2_QUERY
 
@@ -16,16 +17,13 @@ from constants import LAT_LONG, MAX_RETRIES, TEMP_UNIT, DROP_DATASET1_TABLE_QUER
 LOG_DIR_PATH = os.path.join(BASE_DIR, 'logs')
 DB_DIR_PATH = os.path.join(BASE_DIR, 'sqlitedb')
 
-# local path
-REPLICATED_LOG_DIR_PATH = os.path.join(os.getcwd(), 'logs')
-REPLICATED_DB_DIR_PATH = os.path.join(os.getcwd(), 'SQLiteDB')
 
-
-def extract_db_data(conn, tables):
+def extract_db_data(conn, log, tables):
     """write db records as excel"""
     for table in tables:
         df = pd.read_sql_query(f"SELECT * FROM {table}", conn)
         df.to_csv(f'{DB_DIR_PATH}/{table}.csv', index=False)
+        log.info(f"DB table '{table}' extract generated at {DB_DIR_PATH}/{table}.csv")
 
 
 if __name__ == "__main__":
@@ -36,7 +34,8 @@ if __name__ == "__main__":
         run_id = uuid.uuid4().int  # unique id for each app log file
         # configure a logger
         LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        logging.basicConfig(level=logging.INFO, filename=f'{LOG_DIR_PATH}/{run_id}.log', filemode='w', format=LOG_FORMAT)
+        logging.basicConfig(level=logging.INFO, filename=f'{LOG_DIR_PATH}/{run_id}.log', filemode='w',
+                            format=LOG_FORMAT)
         # create a logger
         logger = logging.getLogger()
         print(f"log file availaible at: {REPLICATED_LOG_DIR_PATH}/{run_id}.log", )
@@ -48,7 +47,7 @@ if __name__ == "__main__":
             raise Exception("API_KEY not found")
 
         BASE_URL = "https://api.openweathermap.org/data/2.5/onecall/timemachine?"
-        
+
         print("sending requests to OpenWeather API ...")
         logger.info("sending requests to OpenWeather API ...")
         weather_data_list = []
@@ -71,7 +70,7 @@ if __name__ == "__main__":
                         logger.info(f"Retrying... {retries}")
                         continue
                     break
-                logger.info(f"HTTP Request Status Code {response.status_code}")
+                logger.info(f"HTTP Response Status Code {response.status_code}")
                 if response.status_code == 200:
                     # getting data in the json format
                     data = response.json()  # getting the data
@@ -97,7 +96,7 @@ if __name__ == "__main__":
         weather_df.drop_duplicates(subset=None, keep='first', inplace=True)
 
         print("Saving data to DB...")
-        logger.info("Saving data to DB...")
+
         try:
             # DB operations
             connection = sql.connect(f"{DB_DIR_PATH}/{DB_NAME}.db")  # sqlite connection object
@@ -114,15 +113,17 @@ if __name__ == "__main__":
             logger.info(f"table '{DATASET2}', if exists, dropped")
             cursor.execute(CREATE_DATASET2_QUERY)
             logger.info(f"table '{DATASET2}' created")
-            print(f"SQLite DB available at: {REPLICATED_DB_DIR_PATH}/{DB_NAME}.db")
             connection.commit()
-            extract_db_data(connection, [f'{RAW_DATA_TABLE}', f'{DATASET1}', f'{DATASET2}']) # extract data from DB tables
+            logger.info(f"SQLite DB available at: {DB_DIR_PATH}/{DB_NAME}.db")
+            print(f"SQLite DB available at: {REPLICATED_DB_DIR_PATH}/{DB_NAME}.db")
+            extract_db_data(connection, logger,
+                            [f'{RAW_DATA_TABLE}', f'{DATASET1}', f'{DATASET2}'])  # extract data from DB tables
+            print(f"DB tables extracts available in {REPLICATED_DB_DIR_PATH}/")
             connection.close()
         except Exception as e:
             logger.error("Database Error : ", str(e))
             raise Exception("Database Error : ", str(e))
-        else:
-            logger.info(f"SQLite DB created at: {DB_DIR_PATH}/{DB_NAME}.db")
+
     except Exception as e:
         print(str(e))
     else:
