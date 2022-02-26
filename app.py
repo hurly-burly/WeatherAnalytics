@@ -12,8 +12,13 @@ from config import API_KEY, BASE_DIR, DB_NAME, RAW_DATA_TABLE, DATASET1, DATASET
 from constants import LAT_LONG, MAX_RETRIES, TEMP_UNIT, DROP_DATASET1_TABLE_QUERY, CREATE_DATASET1_QUERY, \
     DROP_DATASET2_TABLE_QUERY, CREATE_DATASET2_QUERY
 
+# container path
 LOG_DIR_PATH = os.path.join(BASE_DIR, 'logs')
 DB_DIR_PATH = os.path.join(BASE_DIR, 'sqlitedb')
+
+# local path
+REPLICATED_LOG_DIR_PATH = os.path.join(os.getcwd(), 'logs')
+REPLICATED_DB_DIR_PATH = os.path.join(os.getcwd(), 'SQLiteDB')
 
 
 def extract_db_data(conn, tables):
@@ -34,7 +39,7 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO, filename=f'{LOG_DIR_PATH}/{run_id}.log', filemode='w', format=LOG_FORMAT)
         # create a logger
         logger = logging.getLogger()
-        print(f"log file generated at: {LOG_DIR_PATH}/{run_id}.log", )
+        print(f"log file availaible at: {REPLICATED_LOG_DIR_PATH}/{run_id}.log", )
         logger.info("------------Execution started--------------")
 
         # check if API_KEY is set
@@ -109,7 +114,7 @@ if __name__ == "__main__":
             logger.info(f"table '{DATASET2}', if exists, dropped")
             cursor.execute(CREATE_DATASET2_QUERY)
             logger.info(f"table '{DATASET2}' created")
-            print(f"SQLite DB created at: {DB_DIR_PATH}/{DB_NAME}.db")
+            print(f"SQLite DB available at: {REPLICATED_DB_DIR_PATH}/{DB_NAME}.db")
             connection.commit()
             extract_db_data(connection, [f'{RAW_DATA_TABLE}', f'{DATASET1}', f'{DATASET2}']) # extract data from DB tables
             connection.close()
